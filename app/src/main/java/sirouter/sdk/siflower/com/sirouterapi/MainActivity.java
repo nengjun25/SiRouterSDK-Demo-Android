@@ -25,6 +25,7 @@ import sirouter.sdk.siflower.com.locallibrary.siwifiApi.SFException;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.GetDeviceDataUsageParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.GetDeviceRestrictParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.GetFreqIntergrationParam;
+import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.GetWiFiDetailParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetCustomWiFiParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetDeviceDataUsageParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetDeviceRestrictParam;
@@ -33,8 +34,10 @@ import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetLeaseNetParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetPasswordParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetWanTypeParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetWiFiAdvanceInfo;
+import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.SetWiFiDetailParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.param.WifiParam;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.BindRet;
+import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.CommandRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.DataUsage;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.Device;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetCustomWiFiRet;
@@ -43,6 +46,7 @@ import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetDeviceRestrictRet
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetFreqIntergrationRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetLeaseNetRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetWanTypeRet;
+import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.GetWiFiDetailRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.RemoteSessionRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.SetCustomWiFiRet;
 import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.SetDeviceDataUsageRet;
@@ -57,6 +61,7 @@ import sirouter.sdk.siflower.com.locallibrary.siwifiApi.ret.UnbindRet;
 import sirouter.sdk.siflower.com.remotelibrary.Listener.RemoteConnectionListener;
 import sirouter.sdk.siflower.com.remotelibrary.Listener.SFObjectResponseListener;
 import sirouter.sdk.siflower.com.remotelibrary.Listener.SiWiFiListListener;
+import sirouter.sdk.siflower.com.remotelibrary.SFClass.RouterSub;
 import sirouter.sdk.siflower.com.remotelibrary.SFClass.Routers;
 import sirouter.sdk.siflower.com.remotelibrary.SFUser;
 import sirouter.sdk.siflower.com.remotelibrary.SiWiFiManager;
@@ -262,16 +267,6 @@ public class MainActivity extends AppCompatActivity {
         createSession();
         remoteGetFile();
         deleteSession();
-
-
-
-
-
-
-
-
-
-
     }
 
     public boolean flagCondition() {
@@ -313,6 +308,8 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+
+
                 SiWiFiManager.getInstance().bindSiRouter(MainActivity.this, LocalApi.DEFAULT_APP_API_VERSION, mUser, new SingleObserver<BindRet>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -323,21 +320,18 @@ public class MainActivity extends AppCompatActivity {
                     public void onSuccess(BindRet bindRet) {
                         Log.e(TAG, "bind success ");
                         Toast.makeText(MainActivity.this, new Gson().toJson(bindRet), Toast.LENGTH_SHORT).show();
-                        SiWiFiManager.getInstance().getRouters(mUser, new SiWiFiListListener<Routers>() {
+                        SFUser.loginByKey(MainActivity.this, mUser.getLoginKeyExtra(), new SFObjectResponseListener<SFUser>() {
                             @Override
-                            public void onSuccess(List<Routers> objlist) {
-                                for (Routers routers : objlist) {
-                                    if (routers.getObjectId().equals(bindRet.getRouterobjectid())) {
-                                        MainActivity.this.routers = routers;
-                                    }
-                                }
+                            public void onSuccess(SFUser sfUser) {
+                                List<Routers> routers = sfUser.getBinder();
                             }
 
                             @Override
-                            public void onError(int code, String msg) {
+                            public void onError(SFException e) {
 
                             }
                         });
+
                     }
 
                     @Override
@@ -382,10 +376,40 @@ public class MainActivity extends AppCompatActivity {
         getWifiObserve.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                LocalApi mLocalApi = new LocalApi(LocalApi.DEFAULT_APP_API_VERSION);
+                mLocalApi.setmLocalIp("192.168.4.1");
+                mLocalApi.setAdminPassword("admin");
+                GetWiFiDetailParam param = new GetWiFiDetailParam(LocalApi.DEFAULT_APP_API_VERSION);
 
-                if(!flagCondition()) {
+                mLocalApi.executeApiWithSingleResponse(param, GetWiFiDetailRet.class).subscribe(new SingleObserver<GetWiFiDetailRet>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(GetWiFiDetailRet getWiFiDetailRet) {
+                        Log.e(TAG,"get wifi success "+new Gson().toJson(getWiFiDetailRet));
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(TAG,"get wifi error "+e.getMessage());
+                    }
+                });
+
+
+                /*if(!flagCondition()) {
                     return;
-                }
+                }*/
+                /*routers = new Routers();
+                RouterSub sub = new RouterSub();
+                sub.setObjectId("548978976");
+                routers.setSub(sub);
+                routers.setObjectId("13123131");
+                mUser = new SFUser();
+                mUser.setObjectId("323132131");
+
                 SiWiFiManager.getInstance().getWifiObserve(routers, mUser, new SingleObserver<List<WiFiInfo>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -403,9 +427,15 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onError(Throwable e) {
                         progressDialog.dismiss();
-                        Log.e(TAG, "wifiinfos: " + e.getMessage());
+                        if(e instanceof SFException) {
+                            Log.e(TAG, "code = " + ((SFException) e).getCode() + " msg = " + e.getMessage());
+                        }else {
+                            Log.e(TAG,  " msg = " + e.getMessage());
+                        }
                     }
-                });
+                });*/
+
+
             }
         });
     }
@@ -421,35 +451,36 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this,"登陆成功",Toast.LENGTH_SHORT).show();
                         MainActivity.this.mUser = sfUser;
                         if (sfUser.getBinder() != null) {
-                            if (sfUser.getBinder().size() != 0) {
-                                Log.e(TAG, "not zero" + new Gson().toJson(sfUser.getBinder()));
-                                routers = sfUser.getBinder().get(0);
-                            }
-                        }
-                        SiWiFiManager.getInstance().createRemoteConnection(sfUser, new RemoteConnectionListener() {
-                            @Override
-                            public void onConnectSuccess() {
-                                flag = 0;
-                                Log.e(TAG, "on connection success");
-                            }
+                       if (sfUser.getBinder().size() != 0) {
+                            Log.e(TAG, "not zero" + new Gson().toJson(sfUser.getBinder()));
+                            routers = sfUser.getBinder().get(0);
+                          }
+                  }
+                    SiWiFiManager.getInstance().createRemoteConnection(sfUser, new RemoteConnectionListener() {
+                @Override
+                        public void onConnectSuccess() {
+                       flag = 0;
+                          Log.e(TAG, "on connection success");
+                       }
 
-                            @Override
-                            public void onConnectionClose(int code, String reason) {
-                                flag = 1;
-                                Log.e(TAG, "on connection close");
-                            }
+                           @Override
+                     public void onConnectionClose(int code, String reason) {
+                       flag = 1;
+                                             Log.e(TAG, "on connection close");
+                             }
 
-                            @Override
-                            public void onFailure(Exception ex) {
-                                flag = 2;
-                                Log.e(TAG, "on Failure");
-                            }
-                        });
+                                @Override
+                     public void onFailure(Exception ex) {
+                                                     flag = 2;
+                                                       Log.e(TAG, "on Failure");
+                                                  }
+            });
+
                     }
 
                     @Override
                     public void onError(SFException ex) {
-                        Log.e(TAG, "登录失败，请检查AppSecret和AppKey");
+                        Log.e(TAG, "login fail code "+ ex.getCode()+" msg "+ex.getMessage());
                     }
                 });
             }
@@ -1099,20 +1130,50 @@ public class MainActivity extends AppCompatActivity {
         setWiFi.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!flagCondition()) {
-                    return;
-                }
                 List<WifiParam> list = new ArrayList<WifiParam>();
-                WifiParam wifiParam = new WifiParam();
-                wifiParam.enable = 1;
-                wifiParam.encryption = "psk2+ccmp";
-                wifiParam.signalmode = 0;
-                wifiParam.channel = 1;
-                wifiParam.password = "12345678";
-                wifiParam.oldssid = "siwifi-8340-5G";
-                wifiParam.newssid = "LIU-2.4G";
-                list.add(wifiParam);
-                SiWiFiManager.getInstance().setWiFi(routers, mUser, list, new SingleObserver<SetWiFiDetailRet>() {
+                WifiParam wifiParam24 = new WifiParam();
+                wifiParam24.enable = 1;
+                wifiParam24.encryption = "psk2+ccmp";
+                wifiParam24.signalmode = 0;
+                wifiParam24.channel = 6;
+                wifiParam24.password = "12345678";
+                wifiParam24.oldssid = "siwifi-7fb8-2.4G";
+                wifiParam24.newssid = "Siflower123-2.4G";
+                WifiParam wifiParam5 = new WifiParam();
+                wifiParam5.enable = 1;
+                wifiParam5.encryption = "psk2+ccmp";
+                wifiParam5.signalmode = 0;
+                wifiParam5.channel = 161;
+                wifiParam5.password = "12345678";
+                wifiParam5.oldssid = "siwifi-7fbc";
+                wifiParam5.newssid = "Siflower123";
+                list.add(wifiParam24);
+                list.add(wifiParam5);
+
+                LocalApi mLocalApi = new LocalApi(LocalApi.DEFAULT_APP_API_VERSION);
+                mLocalApi.setmLocalIp("192.168.4.1");
+                mLocalApi.setAdminPassword("admin");
+                SetWiFiDetailParam setWiFiDetailParam = new SetWiFiDetailParam(LocalApi.DEFAULT_APP_API_VERSION);
+                setWiFiDetailParam.setSetting(new Gson().toJson(list));
+                Log.e(TAG," wifi param "+new Gson().toJson(setWiFiDetailParam));
+                mLocalApi.executeApiWithSingleResponse(setWiFiDetailParam,SetWiFiDetailRet.class).subscribe(new SingleObserver<SetWiFiDetailRet>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(SetWiFiDetailRet ret) {
+                        Log.e(TAG,"set wifi success"+new Gson().toJson(ret));
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(TAG,"set wifi fail "+e.getMessage());
+                    }
+                });
+
+                /*SiWiFiManager.getInstance().setWiFi(routers, mUser, list, new SingleObserver<SetWiFiDetailRet>() {
                     @Override
                     public void onSubscribe(Disposable d) {
 
@@ -1120,16 +1181,14 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onSuccess(SetWiFiDetailRet setWiFiDetailRet) {
-                        progressDialog.dismiss();
-                        Toast.makeText(mainActivity, new Gson().toJson(setWiFiDetailRet), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG,"set wifi success"+new Gson().toJson(setWiFiDetailRet));
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        progressDialog.dismiss();
-                        Toast.makeText(mainActivity, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG,"set wifi fail "+e.getMessage());
                     }
-                });
+                });*/
             }
         });
     }
